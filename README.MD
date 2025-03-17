@@ -1,6 +1,8 @@
 ## Introduction
 
-Rahjoo(**رهـجـو**) meaning Pathfinder, is a lightweight zero dependency HTTP router library for Go, designed to work seamlessly with the standard `net/http` library. This library allows you to define routes with HTTP methods, group routes under common prefixes, and apply middlewares to handlers.
+[![Go Reference](https://pkg.go.dev/badge/github.com/amirzayi/rahjoo.svg)](https://pkg.go.dev/github.com/amirzayi/rahjoo@v0.1.0)
+
+Rahjoo(**رهـجـو**) meaning Pathfinder in persian, is a lightweight zero dependency HTTP router library for Go, designed to work seamlessly with the standard `net/http` library. This library allows you to define routes with HTTP methods, group routes under common prefixes, and apply middlewares to handlers.
 
 ## Features
 
