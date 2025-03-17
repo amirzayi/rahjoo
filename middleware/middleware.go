@@ -24,16 +24,18 @@ func Chain(handler http.Handler, middlewares ...Middleware) http.Handler {
 // Recovery is a middleware that recovers from panics during HTTP request handling.
 // It logs the panic and returns a 500 Internal Server Error response to the client.
 // The logger parameter is used to log the panic details.
-func Recovery(next http.Handler, logger *log.Logger) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		defer func() {
-			if rec := recover(); rec != nil {
-				logger.Printf("panic recovered: %v\n", rec)
-				http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
-			}
-		}()
-		next.ServeHTTP(w, r)
-	})
+func Recovery(logger *log.Logger) func(next http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			defer func() {
+				if rec := recover(); rec != nil {
+					logger.Printf("panic recovered: %v\n", rec)
+					http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+				}
+			}()
+			next.ServeHTTP(w, r)
+		})
+	}
 }
 
 // EnforceJSON is a middleware that ensures the incoming HTTP request has a Content-Type header

@@ -105,11 +105,7 @@ func TestMiddleware(t *testing.T) {
 	}
 	jsonHandler := func(w http.ResponseWriter, r *http.Request) {}
 
-	recoveryMiddleware := func(next http.Handler) http.Handler {
-		return middleware.Recovery(next, log.Default())
-	}
-
-	panicRoute := rahjoo.Route{"/panic": {http.MethodGet: rahjoo.NewHandler(panicHandler, recoveryMiddleware)}}
+	panicRoute := rahjoo.Route{"/panic": {http.MethodGet: rahjoo.NewHandler(panicHandler, middleware.Recovery(log.Default()))}}
 	jsonRoute := rahjoo.Route{"/json": {http.MethodGet: rahjoo.NewHandler(jsonHandler, middleware.EnforceJSON)}}
 
 	mux := http.NewServeMux()

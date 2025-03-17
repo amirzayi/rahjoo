@@ -11,10 +11,6 @@ import (
 func ExampleNewGroup() {
 	listUsers := func(http.ResponseWriter, *http.Request) {}
 
-	recoveryMiddleware := func(next http.Handler) http.Handler {
-		return middleware.Recovery(next, log.Default())
-	}
-
 	userV1 := rahjoo.GroupRoute{"/api/v1/users": {
 		"/list": {
 			http.MethodGet: rahjoo.NewHandler(listUsers, middleware.EnforceJSON),
@@ -24,25 +20,17 @@ func ExampleNewGroup() {
 		},
 	}}
 
-	_ = rahjoo.NewGroup(userV1, recoveryMiddleware)
+	_ = rahjoo.NewGroup(userV1, middleware.Recovery(log.Default()))
 }
 
 func ExampleNewHandler() {
 	h := func(w http.ResponseWriter, r *http.Request) {}
 
-	recoveryMiddleware := func(next http.Handler) http.Handler {
-		return middleware.Recovery(next, log.Default())
-	}
-
-	rahjoo.NewHandler(h, middleware.EnforceJSON, recoveryMiddleware)
+	rahjoo.NewHandler(h, middleware.EnforceJSON, middleware.Recovery(log.Default()))
 }
 
 func ExampleBindRoutesToMux() {
 	listUsers := func(http.ResponseWriter, *http.Request) {}
-
-	recoveryMiddleware := func(next http.Handler) http.Handler {
-		return middleware.Recovery(next, log.Default())
-	}
 
 	userV1 := rahjoo.GroupRoute{"/api/v1/users": {
 		"/list": {
@@ -52,13 +40,13 @@ func ExampleBindRoutesToMux() {
 			http.MethodGet: rahjoo.NewHandler(http.NotFound),
 		},
 	}}
-	userV1Gp := rahjoo.NewGroup(userV1, recoveryMiddleware)
+	userV1Gp := rahjoo.NewGroup(userV1, middleware.Recovery(log.Default()))
 
 	userV2Gp := rahjoo.NewGroup(rahjoo.GroupRoute{"/api/v2": {
 		"/users": {
 			"": rahjoo.NewHandler(listUsers),
 		},
-	}}, recoveryMiddleware)
+	}}, middleware.EnforceJSON, middleware.Recovery(log.Default()))
 
 	mux := http.NewServeMux()
 
