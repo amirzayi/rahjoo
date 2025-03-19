@@ -76,30 +76,27 @@ type (
 	// - The value is an actionHandler(function to handle the request).
 	// This structure allows for flexible route definitions with support for multiple HTTP methods per path.
 	Route map[Path]map[Method]actionHandler
-
-	// Prefix represents a common prefix for a group of routes.
-	// It is used to group related routes under a shared URL prefix (e.g., "/api/v1").
-	Prefix string
-
-	// GroupRoute defines a mapping of route prefixes to their corresponding Route maps.
-	// It is a map where:
-	// - The key is a Prefix (common URL prefix).
-	// - The value is a Route (collection of paths and their handlers).
-	// This allows for organizing routes into logical groups based on their prefixes.
-	GroupRoute map[Prefix]Route
 )
 
-// NewGroup creates a new Route map by combining a GroupRoute with optional middlewares.
-// It iterates over the GroupRoute, prepends the prefix to each path, and applies the provided middlewares
-// to all handlers in the group. This is useful for grouping routes under a common prefix (e.g., "/api/v1").
-func NewGroup(group GroupRoute, middlewares ...middleware.Middleware) Route {
-	routes := Route{}
-	for prefix, route := range group {
+// NewGroupRoute creates a new Group Route with prefix(e.g., "/api/v1").
+func NewGroupRoute(prefix string, routes ...Route) Route {
+	r := Route{}
+	for _, route := range routes {
 		for path, method := range route {
-			routes[Path(fmt.Sprintf("%s%s", prefix, path))] = method
+			r[Path(fmt.Sprintf("%s%s", prefix, path))] = method
 		}
 	}
-	return routes
+	return r
+}
+
+// SetMiddleware set some middlewares on route.
+func (r Route) SetMiddleware(middlewares ...middleware.Middleware) Route {
+	for _, path := range r {
+		for method := range path {
+			path[method] = NewHandler(path[method].handler, middlewares...)
+		}
+	}
+	return r
 }
 
 // NewHandler creates an actionHandler with the given HTTP handler and middlewares.

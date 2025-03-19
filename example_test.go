@@ -8,19 +8,17 @@ import (
 	"github.com/amirzayi/rahjoo/middleware"
 )
 
-func ExampleNewGroup() {
+func ExampleNewGroupRoute() {
 	listUsers := func(http.ResponseWriter, *http.Request) {}
 
-	userV1 := rahjoo.GroupRoute{"/api/v1/users": {
-		"/list": {
-			http.MethodGet: rahjoo.NewHandler(listUsers, middleware.EnforceJSON),
+	_ = rahjoo.NewGroupRoute("/api/v1", rahjoo.Route{
+		"/users": {
+			http.MethodGet: rahjoo.NewHandler(listUsers),
 		},
-		"/{id}": {
-			http.MethodGet: rahjoo.NewHandler(http.NotFound),
+		"/post/{id}/users": {
+			http.MethodGet: rahjoo.NewHandler(listUsers, middleware.Recovery(log.Default())),
 		},
-	}}
-
-	_ = rahjoo.NewGroup(userV1, middleware.Recovery(log.Default()))
+	}).SetMiddleware(middleware.EnforceJSON)
 }
 
 func ExampleNewHandler() {
@@ -32,23 +30,22 @@ func ExampleNewHandler() {
 func ExampleBindRoutesToMux() {
 	listUsers := func(http.ResponseWriter, *http.Request) {}
 
-	userV1 := rahjoo.GroupRoute{"/api/v1/users": {
+	userV1Gp := rahjoo.NewGroupRoute("/api/v1/users", rahjoo.Route{
 		"/list": {
 			http.MethodGet: rahjoo.NewHandler(listUsers, middleware.EnforceJSON),
 		},
 		"/{id}": {
 			http.MethodGet: rahjoo.NewHandler(http.NotFound),
 		},
-	}}
-	userV1Gp := rahjoo.NewGroup(userV1, middleware.Recovery(log.Default()))
+	})
 
-	userV2Gp := rahjoo.NewGroup(rahjoo.GroupRoute{"/api/v2": {
+	userV2Gp := rahjoo.NewGroupRoute("/api/v2", rahjoo.Route{
 		"/users": {
 			"": rahjoo.NewHandler(listUsers),
 		},
-	}}, middleware.EnforceJSON, middleware.Recovery(log.Default()))
+	}).SetMiddleware(middleware.EnforceJSON, middleware.Recovery(log.Default()))
 
 	mux := http.NewServeMux()
-
+	mux.Handle("/images/", http.StripPrefix("/images/", http.FileServer(http.Dir("./images"))))
 	rahjoo.BindRoutesToMux(mux, userV1Gp, userV2Gp)
 }

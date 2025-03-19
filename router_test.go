@@ -28,29 +28,25 @@ func TestRouting(t *testing.T) {
 		}
 	}
 
-	r := rahjoo.NewGroup(rahjoo.GroupRoute{
-		routePathTest: {
-			"": {
-				"": rahjoo.NewHandler(h),
-			},
-			"/sample": {
-				http.MethodPut: rahjoo.NewHandler(h),
-			},
-			"/sample/{id}/simple": {
-				http.MethodPost: rahjoo.NewHandler(h),
-			},
-			"/not_found": {
-				http.MethodGet:    rahjoo.NewHandler(http.NotFound),
-				http.MethodDelete: rahjoo.NewHandler(h),
-			},
+	r := rahjoo.NewGroupRoute(routePathTest, rahjoo.Route{
+		"": {
+			"": rahjoo.NewHandler(h),
+		},
+		"/sample": {
+			http.MethodPut: rahjoo.NewHandler(h),
+		},
+		"/sample/{id}/simple": {
+			http.MethodPost: rahjoo.NewHandler(h),
+		},
+		"/not_found": {
+			http.MethodGet:    rahjoo.NewHandler(http.NotFound),
+			http.MethodDelete: rahjoo.NewHandler(h),
 		},
 	})
 
-	r2 := rahjoo.NewGroup(rahjoo.GroupRoute{
-		routePathV2: {
-			"": {
-				"": rahjoo.NewHandler(h),
-			},
+	r2 := rahjoo.NewGroupRoute(routePathV2, rahjoo.Route{
+		"": {
+			"": rahjoo.NewHandler(h),
 		},
 	})
 
@@ -137,5 +133,39 @@ func TestMiddleware(t *testing.T) {
 				t.Errorf("got status code %d, want %d", res.StatusCode, tc.status)
 			}
 		})
+	}
+}
+
+func TestGroupRoute(t *testing.T) {
+	listUsers := func(http.ResponseWriter, *http.Request) {}
+
+	mux := http.NewServeMux()
+	r := rahjoo.NewGroupRoute("/api/v1", rahjoo.Route{"/users": {"": rahjoo.NewHandler(listUsers)}})
+	// rahjoo.BindRoutesToMux(mux, r)
+
+	req, err := http.NewRequest(http.MethodGet, "/api/v1/users", http.NoBody)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	rec := httptest.NewRecorder()
+
+	mux.ServeHTTP(rec, req)
+
+	// res := rec.Result()
+	// if res.StatusCode != http.StatusOK {
+	// 	t.Errorf("got status code %d, want %d", res.StatusCode, http.StatusOK)
+	// }
+
+	r.SetMiddleware(middleware.EnforceJSON)
+
+	rec2 := httptest.NewRecorder()
+
+	rahjoo.BindRoutesToMux(mux, r)
+	mux.ServeHTTP(rec2, req)
+
+	res := rec2.Result()
+	if res.StatusCode != http.StatusBadRequest {
+		t.Errorf("got status code %d, want %s", res.StatusCode, http.StatusText(http.StatusBadRequest))
 	}
 }

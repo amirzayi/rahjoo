@@ -1,6 +1,6 @@
 ## Introduction
 
-[![Go Reference](https://pkg.go.dev/badge/github.com/amirzayi/rahjoo.svg)](https://pkg.go.dev/github.com/amirzayi/rahjoo@v0.1.0)
+[![Go Reference](https://pkg.go.dev/badge/github.com/amirzayi/rahjoo.svg)](https://pkg.go.dev/github.com/amirzayi/rahjoo)
 
 Rahjoo(**رهـجـو**) meaning Pathfinder in persian, is a lightweight zero dependency HTTP router library for Go, designed to work seamlessly with the standard `net/http` library. This library allows you to define routes with HTTP methods, group routes under common prefixes, and apply middlewares to handlers.
 
@@ -48,28 +48,29 @@ func listUsers(w http.ResponseWriter, r *http.Request) {}
 func main() {
 	mux := http.NewServeMux()
 
+	mux.Handle("/images/", http.StripPrefix("/images/", http.FileServer(http.Dir("./images"))))
+
 	postUsersRoute := rahjoo.Route{
 		"/posts/{id}/users": {
-			http.MethodGet: rahjoo.NewHandler(listUsers),
+			http.MethodGet: rahjoo.NewHandler(listUsers, chim.NoCache, chim.RequestID),
 		},
 	}
 
-	userV1 := rahjoo.GroupRoute{"/api/v1/users": {
+	userV1Gp := rahjoo.NewGroupRoute("/api/v1/users", rahjoo.Route{
 		"/list": {
 			http.MethodGet: rahjoo.NewHandler(listUsers, middleware.EnforceJSON),
 		},
 		"/{id}": {
 			http.MethodGet: rahjoo.NewHandler(http.NotFound),
 		},
-	}}
-	userV1Gp := rahjoo.NewGroup(userV1, middleware.Recovery(log.Default()))
+	}).SetMiddleware(chim.NoCache, chim.CleanPath)
 
 	// empty method will route all method on given handler
-	userV2Gp := rahjoo.NewGroup(rahjoo.GroupRoute{"/api/v2": {
+	userV2Gp := rahjoo.NewGroupRoute("/api/v2", rahjoo.Route{
 		"/users": {
-			"": rahjoo.NewHandler(listUsers),
+			"": rahjoo.NewHandler(listUsers, chim.Throttle(6)),
 		},
-	}}, middleware.EnforceJSON)
+	}).SetMiddleware(middleware.EnforceJSON, chim.NoCache)
 
 	// bind routes to http multiplexer
 	rahjoo.BindRoutesToMux(mux, userV1Gp, userV2Gp, postUsersRoute)
