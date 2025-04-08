@@ -140,8 +140,13 @@ func TestGroupRoute(t *testing.T) {
 	listUsers := func(http.ResponseWriter, *http.Request) {}
 
 	mux := http.NewServeMux()
-	r := rahjoo.NewGroupRoute("/api/v1", rahjoo.Route{"/users": {"": rahjoo.NewHandler(listUsers)}})
-	// rahjoo.BindRoutesToMux(mux, r)
+	r := rahjoo.NewGroupRoute("/api/v1",
+		rahjoo.Route{
+			"/users": {
+				"": rahjoo.NewHandler(listUsers),
+			},
+		},
+	).SetMiddleware(middleware.EnforceJSON)
 
 	req, err := http.NewRequest(http.MethodGet, "/api/v1/users", http.NoBody)
 	if err != nil {
@@ -152,13 +157,6 @@ func TestGroupRoute(t *testing.T) {
 
 	mux.ServeHTTP(rec, req)
 
-	// res := rec.Result()
-	// if res.StatusCode != http.StatusOK {
-	// 	t.Errorf("got status code %d, want %d", res.StatusCode, http.StatusOK)
-	// }
-
-	r.SetMiddleware(middleware.EnforceJSON)
-
 	rec2 := httptest.NewRecorder()
 
 	rahjoo.BindRoutesToMux(mux, r)
@@ -166,6 +164,6 @@ func TestGroupRoute(t *testing.T) {
 
 	res := rec2.Result()
 	if res.StatusCode != http.StatusBadRequest {
-		t.Errorf("got status code %d, want %s", res.StatusCode, http.StatusText(http.StatusBadRequest))
+		t.Errorf("got status code %d, want %d", res.StatusCode, http.StatusBadRequest)
 	}
 }

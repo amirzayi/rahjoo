@@ -5,6 +5,7 @@ import (
 	"log"
 	"mime"
 	"net/http"
+	"slices"
 )
 
 // Middleware is a type that represents an HTTP middleware function.
@@ -12,9 +13,10 @@ import (
 type Middleware func(http.Handler) http.Handler
 
 // Chain applies a series of middlewares to an http.Handler.
-// The middlewares are applied in reverse order, meaning the last middleware in the list
-// will be the first to execute when handling an HTTP request.
+// The middlewares are applied by order, meaning the last middleware in the list
+// will be the last to execute when handling an HTTP request.
 func Chain(handler http.Handler, middlewares ...Middleware) http.Handler {
+	slices.Reverse(middlewares)
 	for _, middleware := range middlewares {
 		handler = middleware(handler)
 	}
