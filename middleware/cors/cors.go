@@ -17,7 +17,7 @@ var DefaultMethodAllowList = []string{
 }
 
 var DefaultHeadersAllowList = []string{
-	"Accept, Content-Type, Content-Length, Accept-Encoding, Authorization", "Origin",
+	"Accept", "Content-Type", "Content-Length", "Accept-Encoding", "Authorization", "Origin",
 }
 
 type corsHandler struct {
@@ -50,10 +50,9 @@ func (c *corsHandler) hasMethod(method string) bool {
 
 func (c *corsHandler) handler(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		origin := r.Header.Get("Origin")
-
 		w.Header().Add("Vary", "Origin")
 
+		origin := r.Header.Get("Origin")
 		if isPreflight(r) {
 			requestedMethod := r.Header.Get("Access-Control-Request-Method")
 			if c.hasMethod(requestedMethod) && c.hasOrigin(origin) {
