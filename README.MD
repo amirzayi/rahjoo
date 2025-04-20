@@ -37,6 +37,7 @@ import (
 
 	"github.com/amirzayi/rahjoo"
 	"github.com/amirzayi/rahjoo/middleware"
+	"github.com/amirzayi/rahjoo/middleware/cors"
 )
 
 func h(w http.ResponseWriter, r *http.Request) {
@@ -78,6 +79,7 @@ func main() {
 	// you can use middleware developed based on std http.HttpHandler
 	// such as chi router middlewares
 	handler := middleware.Chain(mux,
+		cors.CORSHandler(),
 		middleware.Recovery(log.Default()),
 		chim.Timeout(time.Second),
 		chim.Logger,
