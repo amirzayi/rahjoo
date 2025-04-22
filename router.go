@@ -41,6 +41,7 @@ package rahjoo
 
 import (
 	"fmt"
+	"maps"
 	"net/http"
 
 	"github.com/amirzayi/rahjoo/middleware"
@@ -78,6 +79,14 @@ type (
 	Route map[Path]map[Method]actionHandler
 )
 
+func (ah actionHandler) Handler() http.HandlerFunc {
+	return ah.handler
+}
+
+func (ah actionHandler) Middlewares() []middleware.Middleware {
+	return ah.middlewares
+}
+
 // NewGroupRoute creates a new Group Route with prefix(e.g., "/api/v1").
 func NewGroupRoute(prefix string, routes ...Route) Route {
 	r := Route{}
@@ -93,7 +102,8 @@ func NewGroupRoute(prefix string, routes ...Route) Route {
 func (r Route) SetMiddleware(middlewares ...middleware.Middleware) Route {
 	for _, path := range r {
 		for method := range path {
-			path[method] = NewHandler(path[method].handler, middlewares...)
+			mids := append(path[method].middlewares, middlewares...)
+			path[method] = NewHandler(path[method].handler, mids...)
 		}
 	}
 	return r
@@ -114,7 +124,7 @@ func NewHandler(handler http.HandlerFunc, middlewares ...middleware.Middleware) 
 // and registers the handlers with the ServeMux. The route paths are combined with their HTTP methods
 // to create unique route identifiers (e.g., "GET /api/v1/books").
 func BindRoutesToMux(mux *http.ServeMux, routes ...Route) {
-	mergedRoutes := mergeRoutes(routes...)
+	mergedRoutes := MergeRoutes(routes...)
 	for route, handler := range mergedRoutes {
 		for method, action := range handler {
 			mux.Handle(fmt.Sprintf("%s %s", method, route), middleware.Chain(action.handler, action.middlewares...))
@@ -122,15 +132,13 @@ func BindRoutesToMux(mux *http.ServeMux, routes ...Route) {
 	}
 }
 
-// mergeRoutes combines multiple Route maps into a single Route map.
+// MergeRoutes combines multiple Route maps into a single Route map.
 // It iterates over each Route and merges them into a single map, ensuring that
 // routes with the same path and method are not overwritten.
-func mergeRoutes(routes ...Route) Route {
+func MergeRoutes(routes ...Route) Route {
 	merged := Route{}
 	for _, route := range routes {
-		for path, method := range route {
-			merged[path] = method
-		}
+		maps.Copy(merged, route)
 	}
 	return merged
 }
